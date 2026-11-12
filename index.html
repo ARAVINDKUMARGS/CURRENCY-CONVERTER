@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Global Currency Converter - Advanced real-time foreign exchange analytics dashboard with multi-currency conversion, historical trends, and offline support. SpireX Foundation Internship Task 7." />
+  <meta name="keywords" content="currency converter, exchange rates, foreign exchange, SpireX Foundation, forex dashboard, real-time rates" />
+  <meta name="author" content="SpireX Foundation Intern" />
+  <title>Global Currency Converter | SpireX Foundation Fintech Dashboard</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js CDN for Historical Rate Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Ambient Gradient Background -->
+  <div class="ambient-glow ambient-glow-1" aria-hidden="true"></div>
+  <div class="ambient-glow ambient-glow-2" aria-hidden="true"></div>
+
+  <!-- Announcement / Offline Banner -->
+  <aside id="networkBanner" class="system-banner hidden" role="status" aria-live="polite">
+    <div class="banner-content">
+      <i data-lucide="wifi-off" class="banner-icon"></i>
+      <span id="bannerMessage">Offline Mode: Displaying cached rates. Some real-time updates may be paused.</span>
+      <button id="bannerRetryBtn" class="btn-banner-action" type="button">
+        <i data-lucide="refresh-cw"></i> Retry Connection
+      </button>
+    </div>
+  </aside>
+
+  <!-- Locale Currency Detection Banner -->
+  <aside id="localeBanner" class="system-banner locale-banner hidden" role="dialog" aria-labelledby="localeTitle">
+    <div class="banner-content">
+      <i data-lucide="map-pin" class="banner-icon accent-icon"></i>
+      <span id="localeTitle">We detected your local currency as <strong id="detectedCurrencyCode">INR</strong>. Would you like to use it?</span>
+      <div class="banner-actions">
+        <button id="applyLocaleBtn" class="btn btn-sm btn-primary" type="button">Set as Destination</button>
+        <button id="dismissLocaleBtn" class="btn btn-sm btn-ghost" type="button" aria-label="Dismiss locale suggestion">Dismiss</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Primary Navigation Bar -->
+  <header class="navbar-wrapper">
+    <nav class="navbar container" aria-label="Main Navigation">
+      <div class="nav-brand">
+        <a href="#hero" class="brand-link">
+          <div class="brand-icon-box">
+            <i data-lucide="arrow-left-right" class="brand-icon"></i>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">Global<span class="gradient-text">FX</span></span>
+            <span class="brand-tag">SpireX Task 7</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Quick Nav Links -->
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="#converterSection" class="nav-link active">Converter</a></li>
+        <li><a href="#trendsSection" class="nav-link">Trends</a></li>
+        <li><a href="#multiCurrencySection" class="nav-link">Multi-Exchange</a></li>
+        <li><a href="#calculatorSection" class="nav-link">Calculator</a></li>
+        <li><a href="#popularPairsSection" class="nav-link">Live Rates</a></li>
+        <li><a href="#historySection" class="nav-link">History</a></li>
+        <li><a href="#aboutSection" class="nav-link">About</a></li>
+      </ul>
+
+      <!-- Controls & Status -->
+      <div class="nav-actions">
+        <!-- Live Connection Status Pill -->
+        <div id="connectionStatusPill" class="status-pill online" title="Status: Live Market Connected">
+          <span class="status-dot"></span>
+          <span id="connectionStatusText" class="status-text">Live 160+ Rates</span>
+        </div>
+
+        <!-- Auto-Refresh Toggle Pill -->
+        <button id="autoRefreshToggleBtn" class="pill-btn" type="button" title="Auto-refresh rates every 60 seconds" aria-label="Toggle auto refresh">
+          <i data-lucide="timer" class="pill-btn-icon"></i>
+          <span id="autoRefreshTimerText">60s</span>
+        </button>
+
+        <!-- Refresh Manual Button -->
+        <button id="manualRefreshBtn" class="icon-btn" type="button" title="Refresh Rates Now (Shortcut: R)" aria-label="Refresh rates">
+          <i data-lucide="refresh-cw" id="manualRefreshIcon"></i>
+        </button>
+
+        <!-- Theme Toggle (Dark / Light) -->
+        <button id="themeToggleBtn" class="icon-btn theme-toggle" type="button" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
+          <i data-lucide="sun" class="sun-icon"></i>
+          <i data-lucide="moon" class="moon-icon"></i>
+        </button>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button id="mobileMenuBtn" class="icon-btn mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="navMenu" aria-label="Toggle navigation menu">
+          <i data-lucide="menu"></i>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Live Market Ticker Marquee -->
+  <section class="ticker-bar" aria-label="Live FX Market Ticker">
+    <div class="ticker-wrap">
+      <div class="ticker-track" id="tickerTrack">
+        <!-- Populated dynamically with live major pairs -->
+        <div class="ticker-item"><span class="ticker-pair">EUR/USD</span> <span class="ticker-rate">Loading...</span></div>
+        <div class="ticker-item"><span class="ticker-pair">GBP/USD</span> <span class="ticker-rate">Loading...</span></div>
+        <div class="ticker-item"><span class="ticker-pair">USD/JPY</span> <span class="ticker-rate">Loading...</span></div>
+        <div class="ticker-item"><span class="ticker-pair">USD/INR</span> <span class="ticker-rate">Loading...</span></div>
+        <div class="ticker-item"><span class="ticker-pair">USD/CAD</span> <span class="ticker-rate">Loading...</span></div>
+        <div class="ticker-item"><span class="ticker-pair">AUD/USD</span> <span class="ticker-rate">Loading...</span></div>
+        <div class="ticker-item"><span class="ticker-pair">USD/CHF</span> <span class="ticker-rate">Loading...</span></div>
+        <div class="ticker-item"><span class="ticker-pair">USD/AED</span> <span class="ticker-rate">Loading...</span></div>
+      </div>
+    </div>
+  </section>
+
+  <main class="main-content">
+    <!-- Hero Section -->
+    <section id="hero" class="hero-section container">
+      <div class="hero-badge">
+        <i data-lucide="shield-check" class="badge-icon"></i>
+        <span>SpireX Foundation Internship Task 7 • Submission Ready</span>
+      </div>
+      <h1 class="hero-title">
+        Global Real-Time <br />
+        <span class="gradient-text">Foreign Exchange</span> Engine
+      </h1>
+      <p class="hero-subtitle">
+        Institutional-grade precision across 160+ world currencies. Track live exchange rates, analyze historical trend data, and convert multiple currencies simultaneously.
+      </p>
+
+      <!-- Keyboard shortcuts quick reference -->
+      <div class="keyboard-hints" aria-label="Keyboard shortcuts">
+        <span class="hint-item"><kbd>S</kbd> Swap Currencies</span>
+        <span class="hint-item"><kbd>R</kbd> Refresh Rates</span>
+        <span class="hint-item"><kbd>/</kbd> Search Currency</span>
+        <span class="hint-item"><kbd>Esc</kbd> Close Modal</span>
+      </div>
+    </section>
+
+    <!-- Main Converter Card Section -->
+    <section id="converterSection" class="section container">
+      <div class="converter-card-shell glass-card">
+        <!-- Converter Header -->
+        <div class="card-header-flex">
+          <div>
+            <h2 class="card-title">Instant Currency Converter</h2>
+            <p class="card-subtitle">Real-time mid-market reference exchange rates</p>
+          </div>
+          <div class="card-header-actions">
+            <!-- Favorite Pair Toggle Button -->
+            <button id="favoritePairBtn" class="btn-action-icon" type="button" title="Bookmark this currency pair" aria-label="Add to favorite pairs">
+              <i data-lucide="star" id="favoritePairIcon"></i>
+            </button>
+            <!-- Share Conversion -->
+            <button id="shareBtn" class="btn-action-icon" type="button" title="Share conversion details" aria-label="Share conversion">
+              <i data-lucide="share-2"></i>
+            </button>
+            <!-- Reset Button -->
+            <button id="resetBtn" class="btn-action-icon" type="button" title="Reset to default (1 USD to EUR)" aria-label="Reset conversion">
+              <i data-lucide="rotate-ccw"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Amount Selection Pills -->
+        <div class="quick-amounts-bar" aria-label="Quick amount selection">
+          <span class="quick-amounts-label">Quick select:</span>
+          <button type="button" class="amount-pill" data-amount="100">100</button>
+          <button type="button" class="amount-pill" data-amount="500">500</button>
+          <button type="button" class="amount-pill active" data-amount="1000">1,000</button>
+          <button type="button" class="amount-pill" data-amount="5000">5,000</button>
+          <button type="button" class="amount-pill" data-amount="10000">10,000</button>
+        </div>
+
+        <!-- Converter Core Grid -->
+        <form id="converterForm" class="converter-grid" onsubmit="event.preventDefault();">
+          <!-- Amount Input Field -->
+          <div class="input-block amount-block">
+            <label for="amountInput" class="input-label">
+              <span>Amount</span>
+              <span id="amountHelperText" class="label-helper">Valid numeric value</span>
+            </label>
+            <div class="input-wrapper">
+              <span id="sourceSymbolPrefix" class="symbol-prefix">$</span>
+              <input
+                type="number"
+                id="amountInput"
+                class="field-input"
+                value="1000"
+                min="0.000001"
+                step="any"
+                placeholder="0.00"
+                required
+                autocomplete="off"
+                aria-describedby="amountValidationMsg"
+              />
+              <button type="button" id="clearAmountBtn" class="clear-input-btn" title="Clear amount" aria-label="Clear amount">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+            <div id="amountValidationMsg" class="validation-message" aria-live="polite"></div>
+          </div>
+
+          <!-- Currency Pair Selector Grid -->
+          <div class="currency-selectors-row">
+            <!-- Source Currency Selector -->
+            <div class="input-block currency-block">
+              <label for="fromCurrencyBtn" class="input-label">From (Source)</label>
+              <button
+                type="button"
+                id="fromCurrencyBtn"
+                class="currency-select-trigger"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+              >
+                <div class="currency-selected-content">
+                  <img id="fromFlagImg" class="currency-flag-img" src="https://flagcdn.com/w40/us.png" alt="United States flag" />
+                  <span id="fromFlagFallback" class="currency-flag-fallback">USD</span>
+                  <div class="currency-meta">
+                    <span id="fromCodeText" class="currency-code">USD</span>
+                    <span id="fromNameText" class="currency-name">United States Dollar</span>
+                  </div>
+                </div>
+                <i data-lucide="chevron-down" class="chevron-icon"></i>
+              </button>
+            </div>
+
+            <!-- Swap Currencies Button -->
+            <div class="swap-btn-container">
+              <button
+                type="button"
+                id="swapCurrenciesBtn"
+                class="btn-swap"
+                title="Swap source and destination currencies (Shortcut: S)"
+                aria-label="Swap currencies"
+              >
+                <i data-lucide="arrow-left-right" id="swapIcon"></i>
+              </button>
+            </div>
+
+            <!-- Target Currency Selector -->
+            <div class="input-block currency-block">
+              <label for="toCurrencyBtn" class="input-label">To (Destination)</label>
+              <button
+                type="button"
+                id="toCurrencyBtn"
+                class="currency-select-trigger"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+              >
+                <div class="currency-selected-content">
+                  <img id="toFlagImg" class="currency-flag-img" src="https://flagcdn.com/w40/eu.png" alt="European Union flag" />
+                  <span id="toFlagFallback" class="currency-flag-fallback">EUR</span>
+                  <div class="currency-meta">
+                    <span id="toCodeText" class="currency-code">EUR</span>
+                    <span id="toNameText" class="currency-name">Euro</span>
+                  </div>
+                </div>
+                <i data-lucide="chevron-down" class="chevron-icon"></i>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Dynamic Results Panel -->
+        <div id="conversionResultCard" class="result-display-panel">
+          <!-- Loading Overlay -->
+          <div id="ratesLoadingOverlay" class="loading-overlay hidden" aria-live="assertive">
+            <div class="spinner"></div>
+            <span>Fetching live market rates...</span>
+          </div>
+
+          <div class="result-top-row">
+            <div class="conversion-headline">
+              <span id="resultFromFormula" class="formula-text">1,000 USD =</span>
+              <div class="result-value-group">
+                <span id="resultAmount" class="result-main-amount">920.00</span>
+                <span id="resultCurrencyCode" class="result-currency-code">EUR</span>
+              </div>
+            </div>
+
+            <!-- Secondary Actions: Copy & Reverse -->
+            <div class="result-actions">
+              <button id="copyResultBtn" class="btn btn-secondary btn-icon-text" type="button" title="Copy converted amount to clipboard">
+                <i data-lucide="copy"></i>
+                <span id="copyResultText">Copy Amount</span>
+              </button>
+              <button id="reverseConvertBtn" class="btn btn-outline btn-icon-text" type="button" title="Convert the resulting amount back">
+                <i data-lucide="repeat"></i>
+                <span>Reverse</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Exchange Rates Details -->
+          <div class="rate-details-grid">
+            <div class="rate-detail-item">
+              <span class="detail-label">Current Exchange Rate</span>
+              <span id="directExchangeRate" class="detail-value mono">1 USD = 0.9200 EUR</span>
+            </div>
+            <div class="rate-detail-item">
+              <span class="detail-label">Inverse Exchange Rate</span>
+              <span id="inverseExchangeRate" class="detail-value mono">1 EUR = 1.0870 USD</span>
+            </div>
+            <div class="rate-detail-item">
+              <span class="detail-label">Last Synchronized</span>
+              <span id="lastUpdatedTimestamp" class="detail-value">Just now (UTC)</span>
+            </div>
+            <div class="rate-detail-item">
+              <span class="detail-label">Rate Classification</span>
+              <span class="detail-value badge-success">Mid-Market Indicative</span>
+            </div>
+          </div>
+
+          <!-- Market Fee / Banking Spread Notice -->
+          <div class="fee-comparison-callout">
+            <i data-lucide="info" class="callout-icon"></i>
+            <div class="callout-text">
+              <strong>Transparency Note:</strong> High-street banks and card processors typically add a <strong>1.5% - 3.5% hidden markup</strong> over this mid-market rate. Our figures show true spot rates with zero spread.
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Favorites Access Ribbon -->
+        <div class="favorites-ribbon">
+          <span class="ribbon-title"><i data-lucide="star" class="ribbon-star"></i> Pinned Currencies:</span>
+          <div id="favoritesChipsList" class="favorites-chips">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Historical Trends & Analytics Section -->
+    <section id="trendsSection" class="section container">
+      <div class="glass-card analytics-card">
+        <div class="card-header-flex">
+          <div>
+            <div class="section-tag">Market Intelligence</div>
+            <h2 class="card-title">Exchange Rate Historical Trends</h2>
+            <p class="card-subtitle">Analyze currency trajectory, volatility, and period percentage shifts</p>
+          </div>
+          <!-- Timeframe Selector -->
+          <div class="timeframe-buttons" role="group" aria-label="Select historical chart timeframe">
+            <button type="button" class="timeframe-btn" data-timeframe="7D">7 Days</button>
+            <button type="button" class="timeframe-btn active" data-timeframe="1M">1 Month</button>
+            <button type="button" class="timeframe-btn" data-timeframe="6M">6 Months</button>
+            <button type="button" class="timeframe-btn" data-timeframe="1Y">1 Year</button>
+          </div>
+        </div>
+
+        <!-- Metrics Summary Cards -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <span class="metric-label">Period Net Change</span>
+            <div class="metric-value-row">
+              <span id="trendChangePercent" class="metric-value positive">+0.48%</span>
+              <i data-lucide="trending-up" id="trendChangeIcon" class="trend-icon"></i>
+            </div>
+            <span id="trendPeriodLabel" class="metric-subtext">Past 30 Days</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Period Highest Rate</span>
+            <span id="trendHighRate" class="metric-value mono">0.9284</span>
+            <span class="metric-subtext">Peak resistance</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Period Lowest Rate</span>
+            <span id="trendLowRate" class="metric-value mono">0.9125</span>
+            <span class="metric-subtext">Support level</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Period Mean Average</span>
+            <span id="trendAvgRate" class="metric-value mono">0.9205</span>
+            <span class="metric-subtext">Central tendency</span>
+          </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="chart-wrapper">
+          <canvas id="historicalChart" height="280" aria-label="Historical exchange rate trend chart" role="img"></canvas>
+          <div id="chartLoadingOverlay" class="chart-loading hidden">
+            <div class="spinner"></div>
+            <span>Plotting historical market data...</span>
+          </div>
+        </div>
+
+        <div class="chart-footnote">
+          <span><i data-lucide="database" class="footnote-icon"></i> Data Sources: European Central Bank (ECB) Reference Rates via Frankfurter API & Open Exchange Feeds.</span>
+          <span id="chartPairBadge" class="pair-badge">USD / EUR</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Multi-Currency Comparison Section -->
+    <section id="multiCurrencySection" class="section container">
+      <div class="glass-card multi-currency-card">
+        <div class="card-header-flex">
+          <div>
+            <div class="section-tag">Portfolio & Exposure</div>
+            <h2 class="card-title">Multi-Currency Simultaneous Converter</h2>
+            <p class="card-subtitle">Convert your base amount into several international currencies in real time</p>
+          </div>
+          <div class="multi-actions">
+            <button id="addMultiTargetBtn" class="btn btn-secondary btn-sm" type="button">
+              <i data-lucide="plus"></i> Add Currency
+            </button>
+          </div>
+        </div>
+
+        <!-- Multi Converter Base Input Row -->
+        <div class="multi-base-row">
+          <div class="multi-base-input-group">
+            <label for="multiBaseAmount" class="input-label">Base Amount</label>
+            <input
+              type="number"
+              id="multiBaseAmount"
+              class="field-input"
+              value="1000"
+              step="any"
+              min="0.0001"
+            />
+          </div>
+          <div class="multi-base-currency-group">
+            <label class="input-label">Base Currency</label>
+            <button type="button" id="multiBaseSelectBtn" class="multi-select-btn">
+              <img id="multiBaseFlag" class="mini-flag" src="https://flagcdn.com/w40/us.png" alt="US Flag" />
+              <span id="multiBaseCode">USD</span>
+              <i data-lucide="chevron-down" class="chevron-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Multi Grid -->
+        <div id="multiCurrencyGrid" class="multi-grid">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Currency Calculator & Split Tool Section -->
+    <section id="calculatorSection" class="section container">
+      <div class="glass-card calculator-card">
+        <div class="card-header-flex">
+          <div>
+            <div class="section-tag">Budgeting & Remittance</div>
+            <h2 class="card-title">Multi-Amount Currency Calculator</h2>
+            <p class="card-subtitle">Sum multiple transaction lines (travel, invoices, split fees) into a destination currency</p>
+          </div>
+          <button id="addCalcRowBtn" class="btn btn-secondary btn-sm" type="button">
+            <i data-lucide="plus-circle"></i> Add Transaction Row
+          </button>
+        </div>
+
+        <!-- Calculator Rows Container -->
+        <div id="calcRowsContainer" class="calc-rows-container">
+          <!-- Row 1 -->
+          <div class="calc-row" data-row-id="1">
+            <input type="text" class="calc-desc-input" placeholder="Item (e.g. Flight ticket)" value="Accommodations" />
+            <div class="calc-amount-group">
+              <input type="number" class="calc-amount-input" placeholder="0.00" value="450" min="0" step="any" />
+              <select class="calc-currency-select" aria-label="Transaction currency">
+                <option value="EUR">EUR (€)</option>
+                <option value="USD">USD ($)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="INR">INR (₹)</option>
+                <option value="JPY">JPY (¥)</option>
+              </select>
+            </div>
+            <button type="button" class="btn-remove-calc-row" title="Remove row" aria-label="Remove transaction row">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+
+          <!-- Row 2 -->
+          <div class="calc-row" data-row-id="2">
+            <input type="text" class="calc-desc-input" placeholder="Item (e.g. Dinner)" value="Transportation & Pass" />
+            <div class="calc-amount-group">
+              <input type="number" class="calc-amount-input" placeholder="0.00" value="120" min="0" step="any" />
+              <select class="calc-currency-select" aria-label="Transaction currency">
+                <option value="EUR" selected>EUR (€)</option>
+                <option value="USD">USD ($)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="INR">INR (₹)</option>
+                <option value="JPY">JPY (¥)</option>
+              </select>
+            </div>
+            <button type="button" class="btn-remove-calc-row" title="Remove row" aria-label="Remove transaction row">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Calculator Target Result Bar -->
+        <div class="calc-total-bar">
+          <div class="calc-target-selector">
+            <span class="calc-label">Convert Summed Total To:</span>
+            <select id="calcTargetCurrencySelect" class="calc-currency-select primary-select">
+              <option value="USD" selected>USD - United States Dollar ($)</option>
+              <option value="EUR">EUR - Euro (€)</option>
+              <option value="GBP">GBP - British Pound (£)</option>
+              <option value="INR">INR - Indian Rupee (₹)</option>
+              <option value="CAD">CAD - Canadian Dollar (CA$)</option>
+              <option value="AUD">AUD - Australian Dollar (A$)</option>
+              <option value="JPY">JPY - Japanese Yen (¥)</option>
+            </select>
+          </div>
+          <div class="calc-result-display">
+            <span class="calc-result-label">Aggregate Total</span>
+            <div class="calc-total-amount-box">
+              <span id="calcTotalResult" class="calc-total-value">619.56</span>
+              <span id="calcTotalCode" class="calc-total-code">USD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Popular Currency Pairs & Live Market Rates -->
+    <section id="popularPairsSection" class="section container">
+      <div class="glass-card table-card">
+        <div class="card-header-flex">
+          <div>
+            <div class="section-tag">Market Watchlist</div>
+            <h2 class="card-title">Live Major Forex Pairs</h2>
+            <p class="card-subtitle">Global benchmark currency exchange rates with instant 1-click loading</p>
+          </div>
+          <div class="filter-search-box">
+            <i data-lucide="search" class="search-box-icon"></i>
+            <input type="text" id="popularPairsFilter" class="filter-input" placeholder="Filter pairs (e.g. INR, JPY)..." />
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="market-table" aria-label="Major Currency Pairs Table">
+            <thead>
+              <tr>
+                <th scope="col">Currency Pair</th>
+                <th scope="col">Exchange Rate</th>
+                <th scope="col">Inverse (Quote/Base)</th>
+                <th scope="col">24h Shift Indicator</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody id="popularPairsTableBody">
+              <!-- Dynamically populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Conversion History Section -->
+    <section id="historySection" class="section container">
+      <div class="glass-card history-card">
+        <div class="card-header-flex">
+          <div>
+            <div class="section-tag">Local Storage Audit</div>
+            <h2 class="card-title">Recent Conversion History</h2>
+            <p class="card-subtitle">Locally stored logs of your recent currency conversions</p>
+          </div>
+          <div class="history-controls">
+            <button id="clearHistoryBtn" class="btn btn-outline btn-sm" type="button" title="Clear all local history entries">
+              <i data-lucide="trash"></i> Clear History
+            </button>
+          </div>
+        </div>
+
+        <!-- History Items Container -->
+        <div id="historyListContainer" class="history-list">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- About & Submission Section -->
+    <section id="aboutSection" class="section container">
+      <div class="glass-card about-card">
+        <div class="about-grid">
+          <div class="about-main">
+            <div class="section-tag">Internship Task 7</div>
+            <h2 class="card-title">About Global Currency Converter</h2>
+            <p class="about-description">
+              Engineered for the <strong>SpireX Foundation Internship (Task 7)</strong>, this application delivers a clean, institutional-grade foreign exchange dashboard built strictly adhering to Vanilla JavaScript (ES6+), HTML5, and CSS3 principles without third-party frameworks.
+            </p>
+            <div class="specs-grid">
+              <div class="spec-item">
+                <i data-lucide="code-2" class="spec-icon"></i>
+                <div class="spec-content">
+                  <span class="spec-name">Tech Stack</span>
+                  <span class="spec-desc">HTML5, CSS3 Variables & Glassmorphism, Vanilla ES6+</span>
+                </div>
+              </div>
+              <div class="spec-item">
+                <i data-lucide="cpu" class="spec-icon"></i>
+                <div class="spec-content">
+                  <span class="spec-name">Data Pipeline</span>
+                  <span class="spec-desc">Open Exchange Rates API & Frankfurter ECB Engine</span>
+                </div>
+              </div>
+              <div class="spec-item">
+                <i data-lucide="hard-drive" class="spec-icon"></i>
+                <div class="spec-content">
+                  <span class="spec-name">Offline Resiliency</span>
+                  <span class="spec-desc">Smart LocalStorage fallback & snapshot persistence</span>
+                </div>
+              </div>
+              <div class="spec-item">
+                <i data-lucide="calendar" class="spec-icon"></i>
+                <div class="spec-content">
+                  <span class="spec-name">Submission Date</span>
+                  <span class="spec-desc">12 November 2026 • Deadline: 13 Nov 2026, 7:00 PM</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="about-side-box">
+            <h3 class="side-box-title"><i data-lucide="check-circle" class="side-box-icon"></i> Project Deliverable Checklist</h3>
+            <ul class="checklist">
+              <li><i data-lucide="check" class="chk-icon"></i> 160+ Global World Currencies Supported</li>
+              <li><i data-lucide="check" class="chk-icon"></i> Real-time Rates via Free Public APIs</li>
+              <li><i data-lucide="check" class="chk-icon"></i> Interactive Historical Trends Chart (7D-1Y)</li>
+              <li><i data-lucide="check" class="chk-icon"></i> Multi-Currency Simultaneous Converter</li>
+              <li><i data-lucide="check" class="chk-icon"></i> Auto-Detection via Browser Locale</li>
+              <li><i data-lucide="check" class="chk-icon"></i> Multi-Amount Calculator Tool</li>
+              <li><i data-lucide="check" class="chk-icon"></i> Dark/Light Mode with System Sync</li>
+              <li><i data-lucide="check" class="chk-icon"></i> Complete Offline & Network Error Resilience</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Currency Selector Modal Dialog -->
+  <div id="currencyModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-window glass-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 id="modalTitle" class="modal-title">Select Currency</h3>
+          <p id="modalSubtitle" class="modal-subtitle">Choose from 160+ supported world currencies</p>
+        </div>
+        <button type="button" id="closeModalBtn" class="icon-btn modal-close-btn" aria-label="Close currency selection modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <!-- Modal Search Bar -->
+      <div class="modal-search-wrapper">
+        <i data-lucide="search" class="modal-search-icon"></i>
+        <input
+          type="text"
+          id="currencySearchInput"
+          class="modal-search-field"
+          placeholder="Search by currency code, country, or name (e.g. INR, Dollar)..."
+          autocomplete="off"
+        />
+        <button type="button" id="clearSearchBtn" class="clear-search-btn hidden" aria-label="Clear search input">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="modal-tabs" role="tablist">
+        <button type="button" class="modal-tab active" data-tab="all" role="tab" aria-selected="true">
+          All Currencies (<span id="totalCurrenciesCount">160+</span>)
+        </button>
+        <button type="button" class="modal-tab" data-tab="popular" role="tab" aria-selected="false">
+          Popular Majors
+        </button>
+        <button type="button" class="modal-tab" data-tab="favorites" role="tab" aria-selected="false">
+          ⭐ Bookmarked (<span id="favoriteCountBadge">0</span>)
+        </button>
+      </div>
+
+      <!-- Currency Options Virtual Scroll / Grid -->
+      <div id="currencyList" class="currency-options-list" role="listbox">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Hub -->
+  <div id="toastHub" class="toast-hub" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="container footer-content">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="brand-icon-box sm">
+            <i data-lucide="arrow-left-right"></i>
+          </div>
+          <span class="footer-brand-name">Global Currency Converter</span>
+        </div>
+        <p class="footer-text">
+          Developed for <strong>SpireX Foundation Internship • Task 7</strong>. All exchange rates are provided for reference purposes.
+        </p>
+      </div>
+
+      <div class="footer-divider"></div>
+
+      <div class="footer-bottom">
+        <div class="footer-meta">
+          <span>Date: <strong>12 November 2026</strong></span>
+          <span>•</span>
+          <span>Deadline: <strong>13 November 2026, 7:00 PM</strong></span>
+          <span>•</span>
+          <span id="footerClock">UTC Time: --:--:--</span>
+        </div>
+        <div class="footer-credits">
+          <span>APIs: Open Exchange Rates & Frankfurter ECB</span>
+          <span>•</span>
+          <span>Zero Framework Vanilla Architecture</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="script.js"></script>
+</body>
+</html>
+
