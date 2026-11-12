@@ -225,5 +225,4 @@ To upload this project to your GitHub account:
 
 **Developed for the SpireX Foundation Internship Program • Task 7**  
 *Academic & Demonstration Project — 12 November 2026*
-#   C U R R E N C Y - C O N V E R T E R  
- 
+#
